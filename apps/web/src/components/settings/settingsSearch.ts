@@ -560,6 +560,12 @@ export const SETTINGS_SEARCH_ITEMS = [
     searchTerms: ["speech voice keyboard hotkey hold toggle auto"],
   },
   {
+    id: "voice-media-controls",
+    title: "Headphone controls",
+    to: "/settings/voice",
+    searchTerms: ["airpods headset media play pause button bluetooth double press send"],
+  },
+  {
     id: "speech-language",
     title: "Transcription language",
     to: "/settings/voice",

@@ -52,7 +52,8 @@ import {
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { useStableCallback } from "~/hooks/useStableCallback";
-import { cn } from "~/lib/utils";
+import { isElectron } from "~/env";
+import { cn, isMacPlatform } from "~/lib/utils";
 import {
   listAudioInputs,
   updateMicrophoneOrder,
@@ -1352,6 +1353,22 @@ export function VoiceSettingsPanel() {
       </SettingsSection>
 
       <SettingsSection id="voice-transcription" title="Transcription">
+        {isElectron && isMacPlatform(navigator.platform) ? (
+          <SettingsRow
+            {...searchableSetting("voice-media-controls")}
+            title="Headphone controls"
+            description="Play/pause starts and stops dictation while T3 Code is open; double-press sends. Music controls return when T3 Code quits."
+            control={
+              <Switch
+                aria-label="Headphone controls"
+                checked={settings.voiceMediaControls}
+                onCheckedChange={(checked) =>
+                  void updateClientSettings({ voiceMediaControls: checked })
+                }
+              />
+            }
+          />
+        ) : null}
         <SettingsRow
           {...searchableSetting("voice-transcription-destination")}
           title="Transcribe with"

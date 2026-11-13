@@ -41,6 +41,8 @@ type ShortcutInput = {
   ownsFocus?: () => boolean;
   /** Receives handlers that replay keys an outside editor relayed, as if typed here. */
   subscribeKeys?: (handlers: DictationKeyHandlers) => () => void;
+  /** Sends the draft when the desktop app relays a headphone double-press. */
+  onMediaSend?: () => void;
 };
 
 // Several editors can bind the chord; the busy one, then the focused one, then the untargeted one wins.
@@ -176,6 +178,21 @@ export function useDictationShortcut(input: ShortcutInput) {
       relayedFrom.set(event, id.current);
       window.dispatchEvent(event);
     };
+    // Headphone play/pause and double-press, relayed by the macOS desktop app.
+    const unsubscribeMedia = window.desktopBridge?.onMenuAction((action) => {
+      if (action !== "dictation.toggle" && action !== "dictation.send") return;
+      if (!ownsShortcut(id.current)) return;
+      const { speech, disabled, onMediaSend } = current.current;
+      if (action === "dictation.send") return onMediaSend?.();
+      pressed.current = null;
+      generation.current += 1;
+      if (speech.state.phase === "recording") {
+        void speech.stop();
+        return;
+      }
+      const canStart = speech.state.phase === "idle" || speech.state.phase === "error";
+      if (canStart && speech.available && !disabled) void speech.start();
+    });
     const unsubscribe = subscribeKeys?.({
       keydown: relay,
       keyup: relay,
@@ -189,6 +206,7 @@ export function useDictationShortcut(input: ShortcutInput) {
       pressed.current = null;
       shortcutTargets.delete(id.current);
       unsubscribe?.();
+      unsubscribeMedia?.();
       window.removeEventListener("keydown", onKeyDown, true);
       window.removeEventListener("keyup", finish, true);
       window.removeEventListener("blur", onBlur);

@@ -1851,6 +1851,7 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
   const primaryActionEnvironmentUnavailable =
     environmentUnavailable !== null ||
     (!activePendingProgress && (noProviderAvailable || projectSelectionRequired));
+  const submitMediaSendRef = useRef(() => {});
   const dictationShortcutLabel = useDictationShortcut({
     keybindings,
     speech: speechInput,
@@ -1858,6 +1859,7 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
     terminalOpen,
     modelPickerOpen: isComposerModelPickerOpen,
     ...(backgroundThread ? { targetRef: composerFormRef } : {}),
+    onMediaSend: () => submitMediaSendRef.current(),
   });
 
   const resolveActiveComposerTrigger = (): {
@@ -2236,6 +2238,10 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
     );
   };
   const submitCitationAndSendStable = useStableCallback(submitCitationAndSend);
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- publishes the committed send handler to the headphone double-press relay
+  useLayoutEffect(() => {
+    submitMediaSendRef.current = () => void submitCitationAndSendStable();
+  }, [submitCitationAndSendStable]);
   // A question took the editor while a citation comment was
   // unsaved. Keep the comment in the prompt that comes back afterward.
   const saveCitationDraftToPrompt = (replacedValue: string, savedValue: string) => {

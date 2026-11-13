@@ -12,10 +12,12 @@ function Probe({
   speech,
   targetRef,
   subscribeKeys,
+  onMediaSend,
 }: {
   speech: ShortcutInput["speech"];
   targetRef?: RefObject<HTMLElement | null>;
   subscribeKeys?: ShortcutInput["subscribeKeys"];
+  onMediaSend?: () => void;
 }) {
   useDictationShortcut({
     keybindings: DEFAULT_RESOLVED_KEYBINDINGS,
@@ -25,6 +27,7 @@ function Probe({
     modelPickerOpen: false,
     ...(targetRef ? { targetRef } : {}),
     ...(subscribeKeys ? { subscribeKeys, ownsFocus: () => true } : {}),
+    ...(onMediaSend ? { onMediaSend } : {}),
   });
   return null;
 }
@@ -210,3 +213,46 @@ it.each([
     expect(preview.cancel).toHaveBeenCalledTimes(previewRecords ? 1 : 0);
   },
 );
+
+it("routes headphone toggle and send to the one editor that owns the shortcut", async () => {
+  const listeners = new Set<(action: string) => void>();
+  const bridge = {
+    onMenuAction: (listener: (action: string) => void) => {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+  };
+  vi.stubGlobal("desktopBridge", bridge);
+  const emit = (action: string) => listeners.forEach((listener) => listener(action));
+  try {
+    const composer = actions(true);
+    const comment = actions(true);
+    const composerSend = vi.fn();
+    const commentSend = vi.fn();
+    const commentRef = createRef<HTMLTextAreaElement>();
+    {
+      await using _screen = await render(
+        <>
+          <Probe speech={composer} onMediaSend={composerSend} />
+          <Probe speech={comment} targetRef={commentRef} onMediaSend={commentSend} />
+          <textarea aria-label="Comment" ref={commentRef} />
+        </>,
+      );
+      emit("dictation.toggle");
+      emit("dictation.send");
+      expect(composer.start).toHaveBeenCalledTimes(1);
+      expect(composerSend).toHaveBeenCalledTimes(1);
+      expect(comment.start).not.toHaveBeenCalled();
+      expect(commentSend).not.toHaveBeenCalled();
+    }
+    const busy = recording();
+    {
+      await using _screen = await render(<Probe speech={busy} />);
+      emit("dictation.toggle");
+      expect(busy.stop).toHaveBeenCalledTimes(1);
+      expect(busy.start).not.toHaveBeenCalled();
+    }
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});

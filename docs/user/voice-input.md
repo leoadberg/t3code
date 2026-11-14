@@ -99,6 +99,11 @@ sees the recording, which runs in T3 Code itself.
 are down, and **Toggle** always needs a second press. Change the chord itself in
 [Keybindings settings](./keybindings.md).
 
+On macOS, turn on **Headphone controls** in Voice settings to dictate from your
+headphones: play/pause starts or finishes dictation and brings T3 Code forward,
+and a double-press sends the draft. While T3 Code is open it takes those buttons
+from your music player; they go back when T3 Code quits or the setting is off.
+
 ## Improve recognition
 
 - **Language** picks what you speak. **Auto** lets a multilingual model detect

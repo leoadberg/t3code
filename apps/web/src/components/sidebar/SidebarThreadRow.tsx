@@ -84,6 +84,7 @@ import { EnvironmentMachineIcon } from "../EnvironmentMachineIcon";
 import {
   animateSidebarLayoutChanges,
   hasUnseenCompletion,
+  isSidebarNestedLinkClick,
   resolveSidebarRowAccessibility,
   type SidebarDropVerb,
   resolveSidebarRowStatus,
@@ -853,6 +854,20 @@ const SidebarThreadRow = memo(function SidebarThreadRow(props: SidebarThreadRowP
   const handleClick = (event: ReactMouseEvent) => {
     onThreadClick(event, threadRef);
   };
+  // Middle-click settles like closing a browser tab; swallowing mousedown stops autoscroll.
+  const isMiddleClickSettle = (event: ReactMouseEvent) =>
+    event.button === 1 &&
+    props.settlementSupported &&
+    variantAction === "settle" &&
+    !isSidebarNestedLinkClick(event.target);
+  const handleMouseDown = (event: ReactMouseEvent) => {
+    if (isMiddleClickSettle(event)) event.preventDefault();
+  };
+  const handleAuxClick = (event: ReactMouseEvent) => {
+    if (!isMiddleClickSettle(event)) return;
+    event.preventDefault();
+    onSettle(threadRef);
+  };
   const handleAcknowledgeWokeClick = (event: ReactMouseEvent) => {
     event.preventDefault();
     event.stopPropagation();
@@ -1253,6 +1268,8 @@ const SidebarThreadRow = memo(function SidebarThreadRow(props: SidebarThreadRowP
                   inFolder && "ps-9",
                 )}
                 onClick={handleClick}
+                onMouseDown={handleMouseDown}
+                onAuxClick={handleAuxClick}
                 onDoubleClick={handleDoubleClick}
                 onKeyDown={handleKeyDown}
                 onContextMenu={handleContextMenu}
@@ -1443,6 +1460,8 @@ const SidebarThreadRow = memo(function SidebarThreadRow(props: SidebarThreadRowP
               aria-busy={isRegeneratingTitle || undefined}
               className={rowSurfaceClassName}
               onClick={handleClick}
+              onMouseDown={handleMouseDown}
+              onAuxClick={handleAuxClick}
               onDoubleClick={handleDoubleClick}
               onKeyDown={handleKeyDown}
               onContextMenu={handleContextMenu}
